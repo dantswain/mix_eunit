@@ -4,7 +4,14 @@ MixEunit
 A mix task to execute eunit tests.
 
 * Works in umbrella projects.
+* Tests can be in the module or in the test directory.
 * Allows the user to provide a list of patterns for tests to run.
+
+Example
+```
+mix eunit # run all the tests
+mix eunit --verbose "foo*" "*_test" # verbose run foo*.erl and *_test.erl
+```
 
 Installation
 ------------
@@ -36,7 +43,7 @@ A list of patterns to match for test files can be supplied:
 mix eunit foo* bar*
 ```
 
-The runner automatically adds \".erl\" to the patterns.
+The runner automatically adds ".erl" to the patterns.
 
 The following command line switch is also available:
 
@@ -45,5 +52,5 @@ The following command line switch is also available:
 Test search path:
 -----------------
 
-All \".erl\" files in the src and test directories are considered.
+All ".erl" files in the src and test directories are considered.
 
