@@ -48,7 +48,7 @@ defmodule Mix.Tasks.Eunit do
     Mix.Task.run "compile"
 
     # run the actual tests
-    erlang_source_files(post_config[:erlc_paths], options[:patterns])
+    test_modules(post_config[:erlc_paths], options[:patterns])
     |> Enum.map(&module_name_from_path/1)
     |> Enum.drop_while(fn(m) -> tests_pass?(m, options[:eunit_options]) end)
   end
@@ -82,11 +82,21 @@ defmodule Mix.Tasks.Eunit do
     # note - we have to grab build_path because
     # Mix.Project.push resets the build path
     build_path = Mix.Project.config[:build_path]
+    |> Path.split
+    |> Enum.map(fn(p) -> filter_replace(p, "dev", "eunit") end)
+    |> Path.join
 
     %{name: name, file: file} = Mix.Project.pop
     Mix.ProjectStack.post_config(Keyword.merge(post_config,
                                                [build_path: build_path]))
     Mix.Project.push name, file
+  end
+
+  defp filter_replace(x, x, r) do
+    r
+  end
+  defp filter_replace(x, _y, _r) do
+    x
   end
 
   defp ensure_compile do
@@ -102,6 +112,14 @@ defmodule Mix.Tasks.Eunit do
     |> Enum.filter(fn(t) -> match?("compile." <> _, t) end)
   end
 
+  defp test_modules(directories, patterns) do
+    all_modules = erlang_source_files(directories, patterns)
+    |> Enum.map(&module_name_from_path/1)
+    |> Enum.uniq
+
+    remove_test_duplicates(all_modules, all_modules, [])
+  end
+
   defp erlang_source_files(directories, patterns) do
     Enum.map(patterns, fn(p) ->
                Mix.Utils.extract_files(directories, p <> ".erl")
@@ -112,6 +130,29 @@ defmodule Mix.Tasks.Eunit do
 
   defp module_name_from_path(p) do
     Path.basename(p, ".erl") |> String.to_atom
+  end
+
+  defp remove_test_duplicates([], _all_module_names, accum) do
+    accum
+  end
+  defp remove_test_duplicates([module | rest], all_module_names, accum) do
+    module = Atom.to_string(module)
+    if tests_module?(module) &&
+      Enum.member?(all_module_names, without_test_suffix(module)) do
+      remove_test_duplicates(rest, all_module_names, accum)
+    else
+      remove_test_duplicates(rest, all_module_names, [module | accum])
+    end
+  end
+
+  defp tests_module?(module_name) do
+    String.match?(module_name, ~r/_tests$/)
+  end
+
+  defp without_test_suffix(module_name) do
+    module_name
+    |> String.replace(~r/_tests$/, "")
+    |> String.to_atom
   end
 
   defp tests_pass?(module, eunit_options) do
