@@ -21,7 +21,7 @@ Add to your `mix.exs` deps:
 ```elixir
 def deps
   [#... existing deps,
-   {:mix_eunit, "~> 0.1.0"}]
+   {:mix_eunit, "~> 0.1.1"}]
 end
 ```
 
