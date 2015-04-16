@@ -81,7 +81,7 @@ defmodule Mix.Tasks.Eunit do
   defp modify_project_config(post_config) do
     # note - we have to grab build_path because
     # Mix.Project.push resets the build path
-    build_path = Mix.Project.config[:build_path]
+    build_path = Mix.Project.build_path
     |> Path.split
     |> Enum.map(fn(p) -> filter_replace(p, "dev", "eunit") end)
     |> Path.join
