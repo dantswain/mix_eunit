@@ -33,6 +33,16 @@ mix deps.compile
 mix eunit
 ```
 
+To make the `eunit` task run in the `:test` environment, add the following
+to the `project` section of you mix file:
+
+```elixir
+def project
+  [#... existing project settings,
+   preferred_cli_env: [eunit: :test]
+  ]
+end
+```
 
 Command line options:
 ---------------------

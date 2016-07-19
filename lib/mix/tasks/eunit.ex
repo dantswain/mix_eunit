@@ -2,6 +2,8 @@ defmodule Mix.Tasks.Eunit do
   use Mix.Task
   @recursive true
 
+  @preferred_cli_env :test
+
   @shortdoc "Compile and run eunit tests"
 
   @moduledoc """
@@ -36,7 +38,6 @@ defmodule Mix.Tasks.Eunit do
 
   def run(args) do
     options = parse_options(args)
-    Mix.env :test
 
     # add test directory to compile paths and add
     # compiler options for test
@@ -50,7 +51,8 @@ defmodule Mix.Tasks.Eunit do
     # run the actual tests
     test_modules(post_config[:erlc_paths], options[:patterns])
     |> Enum.map(&module_name_from_path/1)
-    |> Enum.drop_while(fn(m) -> tests_pass?(m, options[:eunit_options]) end)
+    |> Enum.drop_while(fn(m) ->
+      tests_pass?(m, options[:eunit_opts] ++ post_config[:eunit_opts]) end)
   end
 
   defp parse_options(args) do
@@ -65,17 +67,18 @@ defmodule Mix.Tasks.Eunit do
                  p -> p
                end
 
-    eunit_options = case switches[:verbose] do
-                      true -> [:verbose]
-                      _ -> []
-                    end
+    eunit_opts = case switches[:verbose] do
+                   true -> [:verbose]
+                   _ -> []
+                 end
 
-    %{eunit_options: eunit_options, patterns: patterns}
+    %{eunit_opts: eunit_opts, patterns: patterns}
   end
 
   defp eunit_post_config(existing_config) do
     [erlc_paths: existing_config[:erlc_paths] ++ ["test"],
-     erlc_options: existing_config[:erlc_options] ++ [{:d, :TEST}]]
+     erlc_options: existing_config[:erlc_options] ++ [{:d, :TEST}],
+     eunit_opts: existing_config[:eunit_opts]]
   end
 
   defp modify_project_config(post_config) do
@@ -155,8 +158,8 @@ defmodule Mix.Tasks.Eunit do
     |> String.to_atom
   end
 
-  defp tests_pass?(module, eunit_options) do
+  defp tests_pass?(module, eunit_opts) do
     IO.puts("Running eunit tests in #{module}:")
-    :ok == :eunit.test(module, eunit_options)
+    :ok == :eunit.test(module, eunit_opts)
   end
 end
