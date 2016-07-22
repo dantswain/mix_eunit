@@ -58,6 +58,9 @@ The runner automatically adds ".erl" to the patterns.
 The following command line switch is also available:
 
 * --verbose/-v - Run eunit with the :verbose option.
+* --cover/-c - Run cover during the tests. Cover data will be produced in
+your `test_coverage` `output` directory. You can set it in your project section
+like this: `test_coverage: [output: "_build/#{Mix.env}/cover"]`
 
 Test search path:
 -----------------
