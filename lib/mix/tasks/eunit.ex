@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Eunit do
 
   @moduledoc """
   Run eunit tests for a project.
-  
+
   This task compiles the project and its tests in the test environment,
   then runs eunit tests.  This task works recursively in umbrella
   projects.
@@ -24,7 +24,7 @@ defmodule Mix.Tasks.Eunit do
   ```
 
   The runner automatically adds \".erl\" to the patterns.
-  
+
   The following command line switch is also available:
 
   * --verbose/-v - Run eunit with the :verbose option.
@@ -49,18 +49,22 @@ defmodule Mix.Tasks.Eunit do
     Mix.Task.run "compile"
 
     # run the actual tests
+    if(options[:cover], do: cover_start())
     test_modules(post_config[:erlc_paths], options[:patterns])
     |> Enum.map(&module_name_from_path/1)
     |> Enum.drop_while(fn(m) ->
       tests_pass?(m, options[:eunit_opts] ++ post_config[:eunit_opts]) end)
+    if(options[:cover], do: cover_analyse())
   end
 
   defp parse_options(args) do
     {switches,
      argv,
      _errors} = OptionParser.parse(args,
-                                  switches: [verbose: :boolean],
-                                  aliases: [v: :verbose])
+                                  switches: [verbose: :boolean,
+                                             cover: :boolean],
+                                  aliases: [v: :verbose,
+                                            c: :cover])
 
     patterns = case argv do
                  [] -> ["*"]
@@ -72,7 +76,7 @@ defmodule Mix.Tasks.Eunit do
                    _ -> []
                  end
 
-    %{eunit_opts: eunit_opts, patterns: patterns}
+    %{eunit_opts: eunit_opts, patterns: patterns, cover: switches[:cover]}
   end
 
   defp eunit_post_config(existing_config) do
@@ -161,5 +165,15 @@ defmodule Mix.Tasks.Eunit do
   defp tests_pass?(module, eunit_opts) do
     IO.puts("Running eunit tests in #{module}:")
     :ok == :eunit.test(module, eunit_opts)
+  end
+
+  defp cover_start() do
+    :cover.compile_beam_directory(String.to_charlist(Mix.Project.compile_path))
+  end
+
+  defp cover_analyse() do
+    dir = Mix.Project.config[:test_coverage][:output]
+    File.mkdir_p(dir)
+    :cover.analyse_to_file([:html, outdir: dir])
   end
 end
