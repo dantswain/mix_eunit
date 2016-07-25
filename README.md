@@ -58,9 +58,22 @@ The runner automatically adds ".erl" to the patterns.
 The following command line switch is also available:
 
 * --verbose/-v - Run eunit with the :verbose option.
-* --cover/-c - Run cover during the tests. Cover data will be produced in
-your `test_coverage` `output` directory. You can set it in your project section
-like this: `test_coverage: [output: "_build/#{Mix.env}/cover"]`
+* --cover/-c - Run cover during the tests. See below.
+
+Cover:
+------
+
+When enabled, coverage data will be produced in your `test_coverage` `output`,
+directory. You can set it in your `project` section like this:
+```elixir
+test_coverage: [output: "_build/#{Mix.env}/cover"]
+```
+This will produce HTML coverage output, just the same as the `mix test --cover`
+command, however the filenames will be slightly different, so they will not
+overwrite eachother. The default `test` task will produce files of the form
+`my_source_file.html` whereas the `eunit` task will produce
+`my_source_file.COVER.html`.
+
 
 Test search path:
 -----------------
