@@ -25,9 +25,12 @@ defmodule Mix.Tasks.Eunit do
 
   The runner automatically adds \".erl\" to the patterns.
 
-  The following command line switch is also available:
+  The following command line switches are also available:
 
-  * --verbose/-v - Run eunit with the :verbose option.
+  * `--verbose`, `-v`   - Run eunit with the :verbose option.
+  * `--cover`, `-c`     - Create a coverage report after running the tests.
+  * `--profile`, `-p`   - Show a list of the 10 slowest tests.
+  * `--no-color`        - Disable color output.
 
   Test search path:
   -----------------
@@ -55,7 +58,8 @@ defmodule Mix.Tasks.Eunit do
       |> Enum.map(&module_name_from_path/1)
       |> Enum.map(fn m -> {:module, m} end)
 
-    case :eunit.test(modules, options[:eunit_opts] ++ post_config[:eunit_opts]) do
+    eunit_opts = get_eunit_opts(options, post_config)
+    case :eunit.test(modules, eunit_opts) do
       :error -> Mix.raise "mix eunit failed"
       :ok -> :ok
     end
@@ -68,8 +72,11 @@ defmodule Mix.Tasks.Eunit do
      argv,
      _errors} = OptionParser.parse(args,
                                   switches: [verbose: :boolean,
+                                             profile: :boolean,
+                                             no_color: :boolean,
                                              cover: :boolean],
                                   aliases: [v: :verbose,
+                                            p: :profile,
                                             c: :cover])
 
     patterns = case argv do
@@ -82,14 +89,38 @@ defmodule Mix.Tasks.Eunit do
                    _ -> []
                  end
 
-    %{eunit_opts: eunit_opts, patterns: patterns, cover: switches[:cover]}
+    %{eunit_opts: eunit_opts,
+      patterns: patterns,
+      profile: switches[:profile],
+      nocolor: switches[:no_color],
+      cover: switches[:cover]}
   end
 
   defp eunit_post_config(existing_config) do
     [erlc_paths: existing_config[:erlc_paths] ++ ["test"],
      erlc_options: existing_config[:erlc_options] ++ [{:d, :TEST}],
-     eunit_opts: existing_config[:eunit_opts]]
+     eunit_opts: existing_config[:eunit_opts] || []]
   end
+
+  defp get_eunit_opts(options, post_config) do
+    eunit_opts = options[:eunit_opts] ++ post_config[:eunit_opts]
+    maybe_add_formatter(eunit_opts, options[:profile], options[:nocolor])
+  end
+
+  defp maybe_add_formatter(opts, profile, nocolor) do
+    if List.keymember?(opts, :report, 0) do
+      opts
+    else
+      format_opts = nocolor_opt(nocolor) ++ profile_opt(profile)
+      [:no_tty, {:report, {:eunit_progress, format_opts}} | opts]
+    end
+  end
+
+  defp nocolor_opt(true), do: []
+  defp nocolor_opt(_), do: [:colored]
+
+  defp profile_opt(true), do: [:profile]
+  defp profile_opt(_), do: []
 
   defp modify_project_config(post_config) do
     # note - we have to grab build_path because
