@@ -50,10 +50,11 @@ defmodule Mix.Tasks.Eunit do
 
     # run the actual tests
     if(options[:cover], do: cover_start())
-    test_modules(post_config[:erlc_paths], options[:patterns])
-    |> Enum.map(&module_name_from_path/1)
-    |> Enum.drop_while(fn(m) ->
-      tests_pass?(m, options[:eunit_opts] ++ post_config[:eunit_opts]) end)
+    modules =
+      test_modules(post_config[:erlc_paths], options[:patterns])
+      |> Enum.map(&module_name_from_path/1)
+      |> Enum.map(fn m -> {:module, m} end)
+    :eunit.test(modules, options[:eunit_opts] ++ post_config[:eunit_opts])
     if(options[:cover], do: cover_analyse())
   end
 
@@ -160,11 +161,6 @@ defmodule Mix.Tasks.Eunit do
     module_name
     |> String.replace(~r/_tests$/, "")
     |> String.to_atom
-  end
-
-  defp tests_pass?(module, eunit_opts) do
-    IO.puts("Running eunit tests in #{module}:")
-    :ok == :eunit.test(module, eunit_opts)
   end
 
   defp cover_start() do
