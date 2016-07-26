@@ -36,25 +36,36 @@ defmodule Mix.Tasks.Eunit do
 
   """
 
+  @cover [output: "cover", tool: Mix.Tasks.Test.Cover]
+
   def run(args) do
     options = parse_options(args)
+    project = Mix.Project.config
 
     # add test directory to compile paths and add
     # compiler options for test
-    post_config = eunit_post_config(Mix.Project.config)
+    post_config = eunit_post_config(project)
     modify_project_config(post_config)
 
     # make sure mix will let us run compile
     ensure_compile
     Mix.Task.run "compile"
 
+    # start cover
+    cover =
+      if options[:cover] do
+        compile_path = Mix.Project.compile_path(project)
+        cover = Keyword.merge(@cover, project[:test_coverage] || [])
+        cover[:tool].start(compile_path, cover)
+      end
+
     # run the actual tests
-    if(options[:cover], do: cover_start())
     test_modules(post_config[:erlc_paths], options[:patterns])
     |> Enum.map(&module_name_from_path/1)
     |> Enum.drop_while(fn(m) ->
       tests_pass?(m, options[:eunit_opts] ++ post_config[:eunit_opts]) end)
-    if(options[:cover], do: cover_analyse())
+
+    cover && cover.()
   end
 
   defp parse_options(args) do
@@ -165,15 +176,5 @@ defmodule Mix.Tasks.Eunit do
   defp tests_pass?(module, eunit_opts) do
     IO.puts("Running eunit tests in #{module}:")
     :ok == :eunit.test(module, eunit_opts)
-  end
-
-  defp cover_start() do
-    :cover.compile_beam_directory(String.to_charlist(Mix.Project.compile_path))
-  end
-
-  defp cover_analyse() do
-    dir = Mix.Project.config[:test_coverage][:output]
-    File.mkdir_p(dir)
-    :cover.analyse_to_file([:html, outdir: dir])
   end
 end
