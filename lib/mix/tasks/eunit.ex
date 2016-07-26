@@ -54,7 +54,12 @@ defmodule Mix.Tasks.Eunit do
       test_modules(post_config[:erlc_paths], options[:patterns])
       |> Enum.map(&module_name_from_path/1)
       |> Enum.map(fn m -> {:module, m} end)
-    :eunit.test(modules, options[:eunit_opts] ++ post_config[:eunit_opts])
+
+    case :eunit.test(modules, options[:eunit_opts] ++ post_config[:eunit_opts]) do
+      :error -> Mix.raise "mix eunit failed"
+      :ok -> :ok
+    end
+
     if(options[:cover], do: cover_analyse())
   end
 
