@@ -28,6 +28,7 @@ defmodule Mix.Tasks.Eunit do
   The following command line switch is also available:
 
   * --verbose/-v - Run eunit with the :verbose option.
+  * `--no-start` - do not start applications after compilation
 
   Test search path:
   -----------------
@@ -47,6 +48,10 @@ defmodule Mix.Tasks.Eunit do
     # make sure mix will let us run compile
     ensure_compile
     Mix.Task.run "compile"
+
+    # start the application
+    Mix.shell.print_app
+    Mix.Task.run "app.start", args
 
     # run the actual tests
     if(options[:cover], do: cover_start())
