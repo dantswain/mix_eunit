@@ -108,7 +108,7 @@ defmodule Mix.Tasks.Eunit do
   end
 
   defp maybe_add_formatter(opts, profile, nocolor) do
-    if List.keymember?(opts, :report, 0) do
+    if Keyword.has_key?(opts, :report) do
       opts
     else
       format_opts = nocolor_opt(nocolor) ++ profile_opt(profile)
