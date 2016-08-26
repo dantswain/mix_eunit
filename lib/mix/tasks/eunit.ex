@@ -39,20 +39,25 @@ defmodule Mix.Tasks.Eunit do
 
   """
 
+  @default_cover_opts [output: "cover", tool: Mix.Tasks.Test.Cover]
+
   def run(args) do
     options = parse_options(args)
+    project = Mix.Project.config
 
     # add test directory to compile paths and add
     # compiler options for test
-    post_config = eunit_post_config(Mix.Project.config)
+    post_config = eunit_post_config(project)
     modify_project_config(post_config)
 
     # make sure mix will let us run compile
     ensure_compile
     Mix.Task.run "compile"
 
+    # start cover
+    cover_state = start_cover_tool(options[:cover], project)
+
     # run the actual tests
-    if(options[:cover], do: cover_start())
     modules =
       test_modules(post_config[:erlc_paths], options[:patterns])
       |> Enum.map(&module_name_from_path/1)
@@ -64,7 +69,7 @@ defmodule Mix.Tasks.Eunit do
       :ok -> :ok
     end
 
-    if(options[:cover], do: cover_analyse())
+    analyze_coverage(cover_state)
   end
 
   defp parse_options(args) do
@@ -199,13 +204,19 @@ defmodule Mix.Tasks.Eunit do
     |> String.to_atom
   end
 
-  defp cover_start() do
-    :cover.compile_beam_directory(String.to_charlist(Mix.Project.compile_path))
+  # coverage was disabled
+  defp start_cover_tool(nil, _project), do: nil
+  defp start_cover_tool(false, _project), do: nil
+  # set up the cover tool
+  defp start_cover_tool(_cover_switch, project) do
+    compile_path = Mix.Project.compile_path(project)
+    cover = Keyword.merge(@default_cover_opts, project[:test_coverage] || [])
+    # returns a callback
+    cover[:tool].start(compile_path, cover)
   end
 
-  defp cover_analyse() do
-    dir = Mix.Project.config[:test_coverage][:output]
-    File.mkdir_p(dir)
-    :cover.analyse_to_file([:html, outdir: dir])
-  end
+  # no cover tool was specified
+  defp analyze_coverage(nil), do: :ok
+  # run the cover callback
+  defp analyze_coverage(cb), do: cb.()
 end
