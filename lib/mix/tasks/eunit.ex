@@ -39,7 +39,7 @@ defmodule Mix.Tasks.Eunit do
 
   """
 
-  @cover [output: "cover", tool: Mix.Tasks.Test.Cover]
+  @default_cover_opts [output: "cover", tool: Mix.Tasks.Test.Cover]
 
   def run(args) do
     options = parse_options(args)
@@ -55,12 +55,7 @@ defmodule Mix.Tasks.Eunit do
     Mix.Task.run "compile"
 
     # start cover
-    cover =
-      if options[:cover] do
-        compile_path = Mix.Project.compile_path(project)
-        cover = Keyword.merge(@cover, project[:test_coverage] || [])
-        cover[:tool].start(compile_path, cover)
-      end
+    cover_state = start_cover_tool(options[:cover], project)
 
     # run the actual tests
     modules =
@@ -74,7 +69,7 @@ defmodule Mix.Tasks.Eunit do
       :ok -> :ok
     end
 
-    cover && cover.()
+    analyze_coverage(cover_state)
   end
 
   defp parse_options(args) do
@@ -208,4 +203,20 @@ defmodule Mix.Tasks.Eunit do
     |> String.replace(~r/_tests$/, "")
     |> String.to_atom
   end
+
+  # coverage was disabled
+  defp start_cover_tool(nil, _project), do: nil
+  defp start_cover_tool(false, _project), do: nil
+  # set up the cover tool
+  defp start_cover_tool(_cover_switch, project) do
+    compile_path = Mix.Project.compile_path(project)
+    cover = Keyword.merge(@default_cover_opts, project[:test_coverage] || [])
+    # returns a callback
+    cover[:tool].start(compile_path, cover)
+  end
+
+  # no cover tool was specified
+  defp analyze_coverage(nil), do: :ok
+  # run the cover callback
+  defp analyze_coverage(cb), do: cb.()
 end
