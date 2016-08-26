@@ -51,8 +51,8 @@ defmodule Mix.Tasks.Eunit do
   @default_cover_opts [output: "cover", tool: Mix.Tasks.Test.Cover]
 
   def run(args) do
-    options = parse_options(args)
     project = Mix.Project.config
+    options = parse_options(args, project)
 
     # add test directory to compile paths and add
     # compiler options for test
@@ -89,7 +89,7 @@ defmodule Mix.Tasks.Eunit do
     analyze_coverage(cover_state)
   end
 
-  defp parse_options(args) do
+  defp parse_options(args, project) do
     {switches, argv} =
       OptionParser.parse!(args, strict: @switches, aliases: @aliases)
 
@@ -103,7 +103,9 @@ defmodule Mix.Tasks.Eunit do
                    _ -> []
                  end
 
-    switches
+    project[:eunit]
+    |> Keyword.take([:verbose, :profile, :cover, :start, :color])
+    |> Keyword.merge(switches)
     |> Keyword.put(:eunit_opts, eunit_opts)
     |> Keyword.put(:patterns, patterns)
   end
