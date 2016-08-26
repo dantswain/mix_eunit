@@ -30,8 +30,8 @@ defmodule Mix.Tasks.Eunit do
   * `--verbose`, `-v`   - Run eunit with the :verbose option.
   * `--cover`, `-c`     - Create a coverage report after running the tests.
   * `--profile`, `-p`   - Show a list of the 10 slowest tests.
+  * `--start`           - Start applications after compilation.
   * `--no-color`        - Disable color output.
-  * `--no-start`        - Do not start applications after compilation.
 
   Test search path:
   -----------------
@@ -59,13 +59,17 @@ defmodule Mix.Tasks.Eunit do
     post_config = eunit_post_config(project)
     modify_project_config(post_config)
 
-    # make sure mix will let us run compile
-    ensure_compile
-    Mix.Task.run "compile"
+    if Keyword.get(options, :compile, true) do
+      # make sure mix will let us run compile
+      ensure_compile
+      Mix.Task.run "compile", args
+    end
 
-    # start the application
-    Mix.shell.print_app
-    Mix.Task.run "app.start", args
+    if Keyword.get(options, :start, false) do
+      # start the application
+      Mix.shell.print_app
+      Mix.Task.run "app.start", args
+    end
 
     # start cover
     cover_state = start_cover_tool(options[:cover], project)
