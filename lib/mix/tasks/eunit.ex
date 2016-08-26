@@ -103,7 +103,7 @@ defmodule Mix.Tasks.Eunit do
                    _ -> []
                  end
 
-    project[:eunit]
+    project[:eunit] || []
     |> Keyword.take([:verbose, :profile, :cover, :start, :color])
     |> Keyword.merge(switches)
     |> Keyword.put(:eunit_opts, eunit_opts)
