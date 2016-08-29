@@ -14,8 +14,7 @@ defmodule Mix.Tasks.Eunit do
   projects.
 
 
-  Command line options:
-  ---------------------
+  ## Command line options
 
   A list of patterns to match for test files can be supplied:
 
@@ -27,32 +26,72 @@ defmodule Mix.Tasks.Eunit do
 
   The following command line switches are also available:
 
-  * `--verbose`, `-v`   - Run eunit with the :verbose option.
-  * `--cover`, `-c`     - Create a coverage report after running the tests.
-  * `--profile`, `-p`   - Show a list of the 10 slowest tests.
-  * `--no-color`        - Disable color output.
+  * `--verbose`, `-v` - run eunit with the :verbose option
+  * `--cover`, `-c` - create a coverage report after running the tests
+  * `--profile`, `-p` - show a list of the 10 slowest tests
+  * `--start` - start applications after compilation
+  * `--no-color` - disable color output
+  * `--force` - force compilation regardless of compilation times
+  * `--no-compile` - do not compile even if files require compilation
+  * `--no-archives-check` - do not check archives
+  * `--no-deps-check` - do not check dependencies
+  * `--no-elixir-version-check` - do not check Elixir version
 
-  Test search path:
-  -----------------
+  The `verbose`, `cover`, `profile`, `start` and `color` switches can be set in
+  the `mix.exs` file and will apply to every invocation of this task. Switches
+  set on the command line will override any settings in the mixfile.
+
+  ```
+  def project do
+    [
+      # ...
+      eunit: [
+        verbose: false,
+        cover: true,
+        profile: true,
+        start: true,
+        color: false
+      ]
+    ]
+  end
+  ```
+
+  ## Test search path
 
   All \".erl\" files in the src and test directories are considered.
 
   """
 
+  @switches [
+    color: :boolean, cover: :boolean, profile: :boolean, verbose: :boolean,
+    start: :boolean, compile: :boolean, force: :boolean, deps_check: :boolean,
+    archives_check: :boolean, elixir_version_check: :boolean
+  ]
+
+  @aliases [v: :verbose, p: :profile, c: :cover]
+
   @default_cover_opts [output: "cover", tool: Mix.Tasks.Test.Cover]
 
   def run(args) do
-    options = parse_options(args)
     project = Mix.Project.config
+    options = parse_options(args, project)
 
     # add test directory to compile paths and add
     # compiler options for test
     post_config = eunit_post_config(project)
     modify_project_config(post_config)
 
-    # make sure mix will let us run compile
-    ensure_compile
-    Mix.Task.run "compile"
+    if Keyword.get(options, :compile, true) do
+      # make sure mix will let us run compile
+      ensure_compile
+      Mix.Task.run "compile", args
+    end
+
+    if Keyword.get(options, :start, false) do
+      # start the application
+      Mix.shell.print_app
+      Mix.Task.run "app.start", args
+    end
 
     # start cover
     cover_state = start_cover_tool(options[:cover], project)
@@ -72,17 +111,9 @@ defmodule Mix.Tasks.Eunit do
     analyze_coverage(cover_state)
   end
 
-  defp parse_options(args) do
-    {switches,
-     argv,
-     _errors} = OptionParser.parse(args,
-                                  switches: [verbose: :boolean,
-                                             profile: :boolean,
-                                             no_color: :boolean,
-                                             cover: :boolean],
-                                  aliases: [v: :verbose,
-                                            p: :profile,
-                                            c: :cover])
+  defp parse_options(args, project) do
+    {switches, argv} =
+      OptionParser.parse!(args, strict: @switches, aliases: @aliases)
 
     patterns = case argv do
                  [] -> ["*"]
@@ -94,11 +125,11 @@ defmodule Mix.Tasks.Eunit do
                    _ -> []
                  end
 
-    %{eunit_opts: eunit_opts,
-      patterns: patterns,
-      profile: switches[:profile],
-      nocolor: switches[:no_color],
-      cover: switches[:cover]}
+    project[:eunit] || []
+    |> Keyword.take([:verbose, :profile, :cover, :start, :color])
+    |> Keyword.merge(switches)
+    |> Keyword.put(:eunit_opts, eunit_opts)
+    |> Keyword.put(:patterns, patterns)
   end
 
   defp eunit_post_config(existing_config) do
@@ -109,20 +140,20 @@ defmodule Mix.Tasks.Eunit do
 
   defp get_eunit_opts(options, post_config) do
     eunit_opts = options[:eunit_opts] ++ post_config[:eunit_opts]
-    maybe_add_formatter(eunit_opts, options[:profile], options[:nocolor])
+    maybe_add_formatter(eunit_opts, options[:profile], options[:color] || true)
   end
 
-  defp maybe_add_formatter(opts, profile, nocolor) do
+  defp maybe_add_formatter(opts, profile, color) do
     if Keyword.has_key?(opts, :report) do
       opts
     else
-      format_opts = nocolor_opt(nocolor) ++ profile_opt(profile)
+      format_opts = color_opt(color) ++ profile_opt(profile)
       [:no_tty, {:report, {:eunit_progress, format_opts}} | opts]
     end
   end
 
-  defp nocolor_opt(true), do: []
-  defp nocolor_opt(_), do: [:colored]
+  defp color_opt(true), do: [:colored]
+  defp color_opt(_), do: []
 
   defp profile_opt(true), do: [:profile]
   defp profile_opt(_), do: []
