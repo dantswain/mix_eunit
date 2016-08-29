@@ -27,11 +27,35 @@ defmodule Mix.Tasks.Eunit do
 
   The following command line switches are also available:
 
-  * `--verbose`, `-v`   - Run eunit with the :verbose option.
-  * `--cover`, `-c`     - Create a coverage report after running the tests.
-  * `--profile`, `-p`   - Show a list of the 10 slowest tests.
-  * `--start`           - Start applications after compilation.
-  * `--no-color`        - Disable color output.
+  * `--verbose`, `-v` - run eunit with the :verbose option
+  * `--cover`, `-c` - create a coverage report after running the tests
+  * `--profile`, `-p` - show a list of the 10 slowest tests
+  * `--start` - start applications after compilation
+  * `--no-color` - disable color output
+  * `--force` - force compilation regardless of compilation times
+  * `--no-compile` - do not compile even if files require compilation
+  * `--no-archives-check` - do not check archives
+  * `--no-deps-check` - do not check dependencies
+  * `--no-elixir-version-check` - do not check Elixir version
+
+  The `verbose`, `cover`, `profile`, `start` and `color` switches can be set in
+  the `mix.exs` file and will apply to every invocation of this task. Switches
+  set on the command line will override any settings in the mixfile.
+
+  ```
+  def project do
+    [
+      # ...
+      eunit: [
+        verbose: false,
+        cover: true,
+        profile: true,
+        start: true,
+        color: false
+      ]
+    ]
+  end
+  ```
 
   Test search path:
   -----------------
