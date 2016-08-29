@@ -14,8 +14,7 @@ defmodule Mix.Tasks.Eunit do
   projects.
 
 
-  Command line options:
-  ---------------------
+  ## Command line options
 
   A list of patterns to match for test files can be supplied:
 
@@ -57,8 +56,7 @@ defmodule Mix.Tasks.Eunit do
   end
   ```
 
-  Test search path:
-  -----------------
+  ## Test search path
 
   All \".erl\" files in the src and test directories are considered.
 
