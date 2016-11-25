@@ -112,8 +112,9 @@ defmodule Mix.Tasks.Eunit do
   end
 
   defp parse_options(args, project) do
-    {switches, argv} =
-      OptionParser.parse!(args, strict: @switches, aliases: @aliases)
+    {switches, argv, errors} =
+      OptionParser.parse(args, strict: @switches, aliases: @aliases)
+    if errors != [], do: raise ParseError, "#{inspect errors}"
 
     patterns = case argv do
                  [] -> ["*"]
