@@ -3,7 +3,7 @@ defmodule MixEunit.Mixfile do
 
   def project do
     [app: :mix_eunit,
-     version: "0.2.0",
+     version: "0.3.0",
      elixir: "~> 1.0",
      description: "A mix task to run eunit tests, works for umbrella projects",
      package: package,
