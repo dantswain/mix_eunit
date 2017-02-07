@@ -6,8 +6,8 @@ defmodule MixEunit.Mixfile do
      version: "0.3.0",
      elixir: "~> 1.0",
      description: "A mix task to run eunit tests, works for umbrella projects",
-     package: package,
-     deps: deps]
+     package: package(),
+     deps: deps()]
   end
 
   defp package do

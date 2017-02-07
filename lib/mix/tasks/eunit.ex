@@ -83,7 +83,7 @@ defmodule Mix.Tasks.Eunit do
 
     if Keyword.get(options, :compile, true) do
       # make sure mix will let us run compile
-      ensure_compile
+      ensure_compile()
       Mix.Task.run "compile", args
     end
 
@@ -114,7 +114,7 @@ defmodule Mix.Tasks.Eunit do
   defp parse_options(args, project) do
     {switches, argv, errors} =
       OptionParser.parse(args, strict: @switches, aliases: @aliases)
-    if errors != [], do: raise ParseError, "#{inspect errors}"
+    if errors != [], do: raise OptionParser.ParseError, "#{inspect errors}"
 
     patterns = case argv do
                  [] -> ["*"]
@@ -184,7 +184,7 @@ defmodule Mix.Tasks.Eunit do
     # we have to reenable compile and all of its
     # child tasks (compile.erlang, compile.elixir, etc)
     Mix.Task.reenable("compile")
-    Enum.each(compilers, &Mix.Task.reenable/1)
+    Enum.each(compilers(), &Mix.Task.reenable/1)
   end
 
   defp compilers do
